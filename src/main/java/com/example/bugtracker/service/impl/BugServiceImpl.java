@@ -21,6 +21,14 @@ public class BugServiceImpl implements BugService {
 
     @Override
     public Bug create(Bug bug) {
+        // Set defaults if not provided (before @PrePersist runs)
+        if (bug.getStatus() == null) {
+            bug.setStatus(BugStatus.OPEN);
+        }
+        if (bug.getPriority() == null) {
+            bug.setPriority(BugPriority.MEDIUM);
+        }
+        // Dates will be set automatically by @PrePersist
         return bugRepository.save(bug);
     }
 
@@ -46,11 +54,23 @@ public class BugServiceImpl implements BugService {
     public Bug update(Long id, Bug updates) {
         Bug existing = bugRepository.findById(id).orElse(null);
         if (existing == null) { return null; }
-        existing.setTitle(updates.getTitle());
-        existing.setDescription(updates.getDescription());
-        existing.setStatus(updates.getStatus());
-        existing.setPriority(updates.getPriority());
-        existing.setAssignedTo(updates.getAssignedTo());
+        // Update only provided fields
+        if (updates.getTitle() != null) {
+            existing.setTitle(updates.getTitle());
+        }
+        if (updates.getDescription() != null) {
+            existing.setDescription(updates.getDescription());
+        }
+        if (updates.getStatus() != null) {
+            existing.setStatus(updates.getStatus());
+        }
+        if (updates.getPriority() != null) {
+            existing.setPriority(updates.getPriority());
+        }
+        if (updates.getAssignedTo() != null) {
+            existing.setAssignedTo(updates.getAssignedTo());
+        }
+        // updatedDate will be set by @PreUpdate
         return bugRepository.save(existing);
     }
 
