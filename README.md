@@ -295,12 +295,6 @@ gradlew.bat bootRun
 java -jar build/libs/Bug-Tracking-0.0.1-SNAPSHOT.jar
 ```
 
-### Using IDE
-
-1. Import the project into your IDE (IntelliJ IDEA, Eclipse, etc.)
-2. Ensure PostgreSQL is running
-3. Run `BugTrackingApplication.java` as a Spring Boot application
-
 ---
 
 ## API Documentation (Swagger)
@@ -331,31 +325,6 @@ The Swagger UI provides:
 ✅ **Error Handling** - Proper HTTP status codes and error responses  
 
 ---
-
-## Configuration
-
-### Application Properties
-
-Key configuration options in `application.properties`:
-
-```properties
-# Server
-server.port=8080
-
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/bugtracker
-spring.datasource.username=postgres
-spring.datasource.password=postgres
-
-# JPA/Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-
-# Swagger
-springdoc.api-docs.path=/api-docs
-springdoc.swagger-ui.path=/swagger-ui.html
-```
 
 ### Environment Variables
 
@@ -431,30 +400,6 @@ curl -X DELETE http://localhost:8080/bugs/1
 
 ---
 
-## Future Enhancements
 
-Potential improvements for future versions:
 
-- [ ] User authentication and authorization
-- [ ] Bug assignment to users
-- [ ] Comment system for bugs
-- [ ] File attachments
-- [ ] Email notifications
-- [ ] Search functionality
-- [ ] Pagination for list endpoints
-- [ ] Advanced filtering and sorting
-- [ ] Bug history/audit trail
-- [ ] Dashboard and analytics
-
----
-
-## License
-
-This project is part of a learning exercise and demonstration of Spring Boot capabilities.
-
----
-
-## Contact
-
-For questions or issues, please open an issue in the repository.
 
