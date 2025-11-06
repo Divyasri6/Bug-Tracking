@@ -19,7 +19,6 @@ export default function CreateBug() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiSuggestion, setAiSuggestion] = useState(null);
-  const [userType, setUserType] = useState('business');
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const navigate = useNavigate();
@@ -70,7 +69,8 @@ export default function CreateBug() {
     setAiSuggestion(null);
 
     try {
-      const suggestion = await getAiSuggestion(form.title, form.description, userType);
+      // Always use business mode
+      const suggestion = await getAiSuggestion(form.title, form.description, 'business');
       setAiSuggestion(suggestion);
       // Update form with AI-suggested priority
       setForm((prev) => ({
@@ -145,32 +145,9 @@ export default function CreateBug() {
             <h4 className="text-md font-semibold text-purple-800">AI Assistant</h4>
           </div>
           <p className="text-sm text-purple-700">
-            Get AI-powered suggestions to help identify and fix the issue before creating the bug report.
+            Get AI-powered business-focused suggestions to help identify and fix the issue before creating the bug report. 
+            The analysis includes business impact, possible causes, and actionable resolutions.
           </p>
-          
-          <div>
-            <label htmlFor="userType" className="block text-xs font-medium text-gray-700 mb-1.5">
-              Analysis Type
-            </label>
-            <select
-              id="userType"
-              value={userType}
-              onChange={(e) => {
-                setUserType(e.target.value);
-                setAiSuggestion(null); // Clear previous suggestion when type changes
-              }}
-              disabled={aiLoading}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="business">Business (Non-Technical)</option>
-              <option value="developer">Developer (Technical)</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {userType === 'business' 
-                ? 'Business-focused analysis with impact assessment and technical notes'
-                : 'Technical analysis with code hints and fix suggestions'}
-            </p>
-          </div>
           
           <button
             type="button"
@@ -205,56 +182,33 @@ export default function CreateBug() {
                 <h4 className="text-sm font-semibold text-purple-800">AI Suggestions</h4>
               </div>
               <div className="bg-white rounded-md p-3 border border-purple-100 space-y-3">
-                {/* Check for Business Impact format (business mode) */}
-                {aiSuggestion.suggestion.match(/Business Impact:/i) ? (
-                  <>
-                    {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i) && (
-                      <div>
-                        <h5 className="text-xs font-semibold text-green-700 mb-1.5 uppercase tracking-wide">Business Impact</h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i)?.[1]?.trim()}
-                        </p>
-                      </div>
-                    )}
-                    {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
-                      <div className="pt-2 border-t border-purple-100">
-                        <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
-                        </p>
-                      </div>
-                    )}
-                    {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
-                      <div className="pt-2 border-t border-purple-100">
-                        <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : aiSuggestion.suggestion.split(/Possible Causes:|Resolutions:/i).length > 1 ? (
-                  /* Developer mode format */
-                  <>
-                    {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
-                      <div>
-                        <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
-                        </p>
-                      </div>
-                    )}
-                    {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
-                      <div className="pt-2 border-t border-purple-100">
-                        <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  /* Fallback: plain text */
+                {/* Business Impact format */}
+                {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i) && (
+                  <div>
+                    <h5 className="text-xs font-semibold text-green-700 mb-1.5 uppercase tracking-wide">Business Impact</h5>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i)?.[1]?.trim()}
+                    </p>
+                  </div>
+                )}
+                {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
+                  <div className={aiSuggestion.suggestion.match(/Business Impact:/i) ? "pt-2 border-t border-purple-100" : ""}>
+                    <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
+                    </p>
+                  </div>
+                )}
+                {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
+                  <div className="pt-2 border-t border-purple-100">
+                    <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
+                    </p>
+                  </div>
+                )}
+                {/* Fallback: if format doesn't match, show plain text */}
+                {!aiSuggestion.suggestion.match(/Business Impact:|Possible Causes:|Resolutions:/i) && (
                   <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                     {aiSuggestion.suggestion}
                   </p>

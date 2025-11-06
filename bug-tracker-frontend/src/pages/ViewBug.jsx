@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getBugById } from '../services/bugService';
+import { getAiSuggestion } from '../services/aiService';
 import { toast } from 'react-hot-toast';
 import { StatusBadge, PriorityBadge } from '../components/StatusBadge';
+import { Bot, Loader2, Sparkles, Lightbulb } from 'lucide-react';
 
 export default function ViewBug() {
   const { id } = useParams();
   const [bug, setBug] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +23,29 @@ export default function ViewBug() {
       .finally(() => mounted && setLoading(false));
     return () => (mounted = false);
   }, [id]);
+
+  const handleAiSuggestion = async () => {
+    if (!bug || !bug.title || !bug.description) {
+      toast.error('Bug information is not available');
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError(null);
+    setAiSuggestion(null);
+
+    try {
+      const suggestion = await getAiSuggestion(bug.title, bug.description, 'business');
+      setAiSuggestion(suggestion);
+      toast.success('AI suggestion generated!');
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to get AI suggestion';
+      setAiError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -108,6 +136,99 @@ export default function ViewBug() {
                     {bug.updatedDate ? new Date(bug.updatedDate).toLocaleString() : '-'}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* AI Suggestion Section */}
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
+                <div className="flex items-center">
+                  <Bot className="text-purple-600 w-5 h-5 mr-2" />
+                  <h4 className="text-md font-semibold text-purple-800">AI Assistant</h4>
+                </div>
+                <p className="text-sm text-purple-700">
+                  Get AI-powered suggestions to help identify possible causes and resolutions for this bug.
+                </p>
+                
+                <button
+                  type="button"
+                  onClick={handleAiSuggestion}
+                  disabled={aiLoading || !bug}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Get AI Suggestion
+                    </>
+                  )}
+                </button>
+                
+                {aiError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600 font-medium mb-1">Error</p>
+                    <p className="text-xs text-red-600">{aiError}</p>
+                  </div>
+                )}
+
+                {aiSuggestion && (
+                  <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center mb-3">
+                      <Lightbulb className="text-purple-600 w-5 h-5 mr-2" />
+                      <h4 className="text-sm font-semibold text-purple-800">AI Suggestions</h4>
+                    </div>
+                    <div className="bg-white rounded-md p-3 border border-purple-100 space-y-3">
+                      {/* Business Impact format */}
+                      {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-green-700 mb-1.5 uppercase tracking-wide">Business Impact</h5>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i)?.[1]?.trim()}
+                          </p>
+                        </div>
+                      )}
+                      {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
+                        <div className={aiSuggestion.suggestion.match(/Business Impact:/i) ? "pt-2 border-t border-purple-100" : ""}>
+                          <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
+                          </p>
+                        </div>
+                      )}
+                      {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
+                        <div className="pt-2 border-t border-purple-100">
+                          <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
+                          </p>
+                        </div>
+                      )}
+                      {/* Fallback: if format doesn't match, show plain text */}
+                      {!aiSuggestion.suggestion.match(/Business Impact:|Possible Causes:|Resolutions:/i) && (
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion}
+                        </p>
+                      )}
+                    </div>
+                    {aiSuggestion.predictedPriority && (
+                      <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-xs text-blue-700">
+                          <strong>AI Predicted Priority:</strong> <span className="font-semibold">{aiSuggestion.predictedPriority}</span>
+                          {aiSuggestion.predictedPriority !== bug.priority && (
+                            <span className="ml-2 text-blue-600">
+                              (Current: {bug.priority})
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
         </div>
