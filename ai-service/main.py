@@ -20,9 +20,16 @@ load_dotenv()
 class BugQuery(BaseModel):
     title: str = Field(..., example="Login button not working")
     description: str = Field(..., example="The login button does not respond when clicked on the homepage.")
+    userType: Literal["developer", "business"] = Field(default="developer", example="developer")
 
 class AiSuggestion(BaseModel):
-    suggestion: str = Field(..., example="Check the onClick handler; ensure event is bound and preventing default isn't blocking it.")
+    suggestion: str = Field(
+        ..., 
+        examples=[
+            "Possible Causes: 1) onClick handler not bound properly, 2) Event propagation blocked. Resolutions: Check the onClick handler binding in the Login component, ensure event.preventDefault() is not blocking the handler, verify the component is properly mounted.",
+            "Business Impact: Users cannot access their accounts, leading to support tickets and potential revenue loss. Technical Note: The login functionality appears to be broken. Priority: HIGH - This blocks core user authentication."
+        ]
+    )
     predictedPriority: Literal["LOW", "MEDIUM", "HIGH"]
 
     @field_validator("predictedPriority")
@@ -60,17 +67,83 @@ if not OPENAI_API_KEY:
 # Choose a model; you may override via env var OPENAI_MODEL
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # change to preferred model if needed
 
-# System message to define role
-SYSTEM_PROMPT = (
-    "You are an expert software engineer and triage manager. "
-    "Analyze bug reports (title + description) and produce a helpful, concise technical suggestion "
-    "and a single priority level. The response MUST be strictly valid JSON matching the format instructions provided."
-)
+# ----------------------------
+# Dynamic prompt generation based on user type
+# ----------------------------
+def get_system_prompt(user_type: str) -> str:
+    """
+    Generate system prompt based on user type.
+    - developer: Technical root causes, code hints, fix suggestions
+    - business: Non-technical summary, business impact, with some technical hints
+    """
+    if user_type == "business":
+        return (
+            "You are an expert product manager and business analyst. "
+            "Analyze bug reports (title + description) and provide:\n"
+            "1. Business Impact: Explain how this bug affects users, business operations, or revenue\n"
+            "2. Possible Causes: Provide 2-3 likely root causes in non-technical terms, but include some technical context where helpful\n"
+            "3. Resolutions: Suggest actionable steps to address the issue, including both business-level actions and technical notes\n"
+            "Format your suggestion as: 'Business Impact: [impact]. Possible Causes: [causes]. Resolutions: [resolutions].'\n"
+            "Also predict a priority level (LOW, MEDIUM, or HIGH) based on the bug's business impact and user impact.\n"
+            "The response MUST be strictly valid JSON matching the format instructions provided."
+        )
+    else:  # developer (default)
+        return (
+            "You are an expert software engineer and triage manager. "
+            "Analyze bug reports (title + description) and provide:\n"
+            "1. Possible Causes: List 2-3 likely root causes for the bug with technical details\n"
+            "2. Resolutions: Provide concrete, actionable steps to fix the issue, including code pointers, specific areas to check, and technical implementation details\n"
+            "Format your suggestion as: 'Possible Causes: [list causes]. Resolutions: [list resolutions].'\n"
+            "Also predict a priority level (LOW, MEDIUM, or HIGH) based on the bug's technical impact and severity.\n"
+            "The response MUST be strictly valid JSON matching the format instructions provided."
+        )
+
+def get_human_prompt(title: str, description: str, user_type: str, format_instructions: str) -> str:
+    """
+    Generate human prompt based on user type.
+    """
+    base_prompt = (
+        f"{format_instructions}\n\n"
+        "BUG REPORT:\n"
+        f"Title: {title}\n\n"
+        f"Description: {description}\n\n"
+    )
+    
+    if user_type == "business":
+        return (
+            f"{base_prompt}"
+            "Based on the bug title and description above, analyze the issue from a business perspective and provide:\n"
+            "- Business impact: How does this affect users, operations, or revenue?\n"
+            "- Possible causes: 2-3 likely root causes (explain in business terms with some technical context)\n"
+            "- Resolutions: Actionable steps including business-level actions and technical notes\n"
+            "- A predicted priority level (LOW, MEDIUM, or HIGH) based on business impact\n\n"
+            "Please return only the JSON object as instructed. Do not include any extra explanation."
+        )
+    else:  # developer
+        return (
+            f"{base_prompt}"
+            "Based on the bug title and description above, analyze the issue and provide:\n"
+            "- Possible causes for this bug (2-3 likely root causes with technical details)\n"
+            "- Resolutions with actionable steps to fix the issue, including code pointers and technical implementation details\n"
+            "- A predicted priority level (LOW, MEDIUM, or HIGH) based on technical impact\n\n"
+            "Please return only the JSON object as instructed. Do not include any extra explanation."
+        )
 
 # ----------------------------
 # Helper: call LLM and parse structured output
 # ----------------------------
-def call_llm_and_parse(title: str, description: str) -> AiSuggestion:
+def call_llm_and_parse(title: str, description: str, user_type: str = "developer") -> AiSuggestion:
+    """
+    Call LLM with bug title and description, return structured AiSuggestion.
+    
+    Args:
+        title: Bug title
+        description: Bug description
+        user_type: "developer" or "business" - determines prompt style
+    
+    Returns:
+        AiSuggestion with suggestion and predictedPriority
+    """
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is not set in environment variables")
 
@@ -91,18 +164,13 @@ def call_llm_and_parse(title: str, description: str) -> AiSuggestion:
         parser = PydanticOutputParser(pydantic_object=AiSuggestion)
         format_instructions = parser.get_format_instructions()
         
-        # Build human prompt including format instructions
-        human_message_content = (
-            f"{format_instructions}\n\n"
-            "BUG REPORT:\n"
-            f"Title: {title}\n\n"
-            f"Description: {description}\n\n"
-            "Please return only the JSON object as instructed. Do not include any extra explanation."
-        )
+        # Get dynamic prompts based on user type
+        system_prompt = get_system_prompt(user_type)
+        human_message_content = get_human_prompt(title, description, user_type, format_instructions)
 
         # Call the model
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
+            SystemMessage(content=system_prompt),
             HumanMessage(content=human_message_content),
         ]
 
@@ -119,10 +187,16 @@ def call_llm_and_parse(title: str, description: str) -> AiSuggestion:
         from langchain.schema import SystemMessage, HumanMessage
         from langchain.output_parsers import StructuredOutputParser, ResponseSchema
         
+        # Determine response schema description based on user type
+        if user_type == "business":
+            suggestion_desc = "A detailed analysis including: 1) Business Impact (how this affects users/operations/revenue), 2) Possible Causes (2-3 likely root causes in business terms with technical context), 3) Resolutions (actionable steps including business-level actions and technical notes). Format as: 'Business Impact: [impact]. Possible Causes: [causes]. Resolutions: [resolutions].'"
+        else:
+            suggestion_desc = "A detailed analysis including: 1) Possible Causes (2-3 likely root causes with technical details), 2) Resolutions (concrete, actionable steps to fix with code pointers or specific areas to check). Format as: 'Possible Causes: [list]. Resolutions: [list].'"
+        
         response_schemas = [
             ResponseSchema(
                 name="suggestion",
-                description="A concise technical suggestion or likely cause and recommended fix. Be concrete and include steps or code pointers if helpful."
+                description=suggestion_desc
             ),
             ResponseSchema(
                 name="predictedPriority",
@@ -139,16 +213,12 @@ def call_llm_and_parse(title: str, description: str) -> AiSuggestion:
             openai_api_key=OPENAI_API_KEY,
         )
 
-        human_message_content = (
-            f"{format_instructions}\n\n"
-            "BUG REPORT:\n"
-            f"Title: {title}\n\n"
-            f"Description: {description}\n\n"
-            "Please return only the JSON object as instructed. Do not include any extra explanation."
-        )
+        # Get dynamic prompts based on user type
+        system_prompt = get_system_prompt(user_type)
+        human_message_content = get_human_prompt(title, description, user_type, format_instructions)
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
+            SystemMessage(content=system_prompt),
             HumanMessage(content=human_message_content),
         ]
 
@@ -175,11 +245,21 @@ def call_llm_and_parse(title: str, description: str) -> AiSuggestion:
 @app.post("/ai/suggest", response_model=AiSuggestion)
 async def suggest_ai(bug: BugQuery):
     """
-    Accepts a bug title and description, asks the LLM for a suggested fix and predicted priority (LOW/MEDIUM/HIGH),
+    Accepts a bug title, description, and userType, asks the LLM for a suggested fix and predicted priority (LOW/MEDIUM/HIGH),
     and returns a structured AiSuggestion.
+    
+    - userType "developer": Provides technical root causes, code hints, and fix suggestions
+    - userType "business": Provides non-technical summary, business impact, and suggested priority with some technical hints
+    
+    Request body:
+    {
+        "title": "Login button not working",
+        "description": "The login button does not respond when clicked.",
+        "userType": "developer"  // or "business", defaults to "developer"
+    }
     """
     try:
-        ai_response = call_llm_and_parse(bug.title, bug.description)
+        ai_response = call_llm_and_parse(bug.title, bug.description, bug.userType)
         return ai_response
     except RuntimeError as e:
         # Provide helpful error info in dev, but keep message safe for production

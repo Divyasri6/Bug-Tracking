@@ -5,7 +5,10 @@ import com.example.bugtracker.model.BugPriority;
 import com.example.bugtracker.model.BugStatus;
 import com.example.bugtracker.repository.BugRepository;
 import com.example.bugtracker.service.BugService;
+import com.example.bugtracker.service.EmployeeAssignmentService;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,10 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class BugServiceImpl implements BugService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BugServiceImpl.class);
+    
     private final BugRepository bugRepository;
+    private final EmployeeAssignmentService employeeAssignmentService;
 
-    public BugServiceImpl(BugRepository bugRepository) {
+    public BugServiceImpl(BugRepository bugRepository, EmployeeAssignmentService employeeAssignmentService) {
         this.bugRepository = bugRepository;
+        this.employeeAssignmentService = employeeAssignmentService;
     }
 
     @Override
@@ -28,6 +35,15 @@ public class BugServiceImpl implements BugService {
         if (bug.getPriority() == null) {
             bug.setPriority(BugPriority.MEDIUM);
         }
+        
+        // Validate provided employee name if assigned
+        if (bug.getAssignedTo() != null && !bug.getAssignedTo().trim().isEmpty()) {
+            if (!employeeAssignmentService.validateEmployee(bug.getAssignedTo())) {
+                logger.warn("Invalid employee name provided: {}. Bug will be created without assignment.", bug.getAssignedTo());
+                bug.setAssignedTo(null);
+            }
+        }
+        
         // Dates will be set automatically by @PrePersist
         return bugRepository.save(bug);
     }

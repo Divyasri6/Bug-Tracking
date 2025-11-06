@@ -37,4 +37,10 @@ export const updateBug = (id, bug) => api.put(`${base}/${id}`, bug);
  */
 export const deleteBug = (id) => api.delete(`${base}/${id}`);
 
+/**
+ * Get all employees
+ * @returns {Promise} Axios response with array of employees
+ */
+export const getAllEmployees = () => api.get('/employees');
+
 

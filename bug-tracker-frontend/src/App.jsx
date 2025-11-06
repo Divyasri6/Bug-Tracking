@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Home from './pages/Home';
 import BugList from './pages/BugList';
 import CreateBug from './pages/CreateBug';
 import EditBug from './pages/EditBug';
@@ -10,7 +11,8 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 font-sans">
       <Navbar />
       <Routes>
-        <Route path="/" element={<BugList />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/bugs" element={<BugList />} />
         <Route path="/create" element={<CreateBug />} />
         <Route path="/edit/:id" element={<EditBug />} />
         <Route path="/bugs/:id" element={<ViewBug />} />

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBug } from '../services/bugService';
+import { createBug, getAllEmployees } from '../services/bugService';
 import { getAiSuggestion } from '../services/aiService';
 import { toast } from 'react-hot-toast';
+import { Bot, Loader2, Sparkles, Lightbulb } from 'lucide-react';
 
 const initial = {
   title: '',
@@ -17,7 +18,21 @@ export default function CreateBug() {
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [userType, setUserType] = useState('business');
+  const [employees, setEmployees] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load employees on component mount
+    getAllEmployees()
+      .then((res) => {
+        setEmployees(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load employees:', err);
+      });
+  }, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -30,7 +45,7 @@ export default function CreateBug() {
     return '';
   };
 
-  const handleAiTriage = async () => {
+  const handleAiSuggestion = async () => {
     if (!form.title.trim() || !form.description.trim()) {
       toast.error('Please fill in Title and Description first');
       return;
@@ -38,15 +53,17 @@ export default function CreateBug() {
 
     setAiLoading(true);
     setAiError(null);
+    setAiSuggestion(null);
 
     try {
-      const suggestion = await getAiSuggestion(form.title, form.description);
+      const suggestion = await getAiSuggestion(form.title, form.description, userType);
+      setAiSuggestion(suggestion);
       // Update form with AI-suggested priority
       setForm((prev) => ({
         ...prev,
         priority: suggestion.predictedPriority,
       }));
-      toast.success('AI analysis complete! Priority updated.');
+      toast.success('AI suggestion generated! Review and fix the issue before creating the bug.');
     } catch (error) {
       const errorMessage = error.message || 'Failed to get AI suggestion';
       setAiError(errorMessage);
@@ -55,6 +72,7 @@ export default function CreateBug() {
       setAiLoading(false);
     }
   };
+
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -106,31 +124,135 @@ export default function CreateBug() {
           />
         </div>
 
-        {/* AI Triage Section */}
-        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+        {/* AI Suggestion Section */}
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
           <div className="flex items-center">
-            <div className="text-purple-600 text-xl mr-2">🤖</div>
+            <Bot className="text-purple-600 w-5 h-5 mr-2" />
             <h4 className="text-md font-semibold text-purple-800">AI Assistant</h4>
           </div>
           <p className="text-sm text-purple-700">
-            Fill in the title and description, then let AI suggest the priority.
+            Get AI-powered suggestions to help identify and fix the issue before creating the bug report.
           </p>
+          
+          <div>
+            <label htmlFor="userType" className="block text-xs font-medium text-gray-700 mb-1.5">
+              Analysis Type
+            </label>
+            <select
+              id="userType"
+              value={userType}
+              onChange={(e) => {
+                setUserType(e.target.value);
+                setAiSuggestion(null); // Clear previous suggestion when type changes
+              }}
+              disabled={aiLoading}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="business">Business (Non-Technical)</option>
+              <option value="developer">Developer (Technical)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {userType === 'business' 
+                ? 'Business-focused analysis with impact assessment and technical notes'
+                : 'Technical analysis with code hints and fix suggestions'}
+            </p>
+          </div>
+          
           <button
             type="button"
-            onClick={handleAiTriage}
+            onClick={handleAiSuggestion}
             disabled={aiLoading || !form.title.trim() || !form.description.trim()}
             className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300 disabled:cursor-not-allowed"
           >
             {aiLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Analyzing...
               </>
             ) : (
-              'Analyze with AI'
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Get AI Suggestion
+              </>
             )}
           </button>
-          {aiError && <p className="text-sm text-red-600 mt-2">{aiError}</p>}
+          
+          {aiError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600 font-medium mb-1">Error</p>
+              <p className="text-xs text-red-600">{aiError}</p>
+            </div>
+          )}
+
+          {aiSuggestion && (
+            <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+              <div className="flex items-center mb-3">
+                <Lightbulb className="text-purple-600 w-5 h-5 mr-2" />
+                <h4 className="text-sm font-semibold text-purple-800">AI Suggestions</h4>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-purple-100 space-y-3">
+                {/* Check for Business Impact format (business mode) */}
+                {aiSuggestion.suggestion.match(/Business Impact:/i) ? (
+                  <>
+                    {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i) && (
+                      <div>
+                        <h5 className="text-xs font-semibold text-green-700 mb-1.5 uppercase tracking-wide">Business Impact</h5>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion.match(/Business Impact:([^]*?)(?=Possible Causes:|Resolutions:|$)/i)?.[1]?.trim()}
+                        </p>
+                      </div>
+                    )}
+                    {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
+                      <div className="pt-2 border-t border-purple-100">
+                        <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
+                        </p>
+                      </div>
+                    )}
+                    {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
+                      <div className="pt-2 border-t border-purple-100">
+                        <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : aiSuggestion.suggestion.split(/Possible Causes:|Resolutions:/i).length > 1 ? (
+                  /* Developer mode format */
+                  <>
+                    {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i) && (
+                      <div>
+                        <h5 className="text-xs font-semibold text-purple-700 mb-1.5 uppercase tracking-wide">Possible Causes</h5>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion.match(/Possible Causes:([^]*?)(?=Resolutions:|$)/i)?.[1]?.trim()}
+                        </p>
+                      </div>
+                    )}
+                    {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i) && (
+                      <div className="pt-2 border-t border-purple-100">
+                        <h5 className="text-xs font-semibold text-blue-700 mb-1.5 uppercase tracking-wide">Resolutions</h5>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {aiSuggestion.suggestion.match(/Resolutions:([^]*?)$/i)?.[1]?.trim()}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Fallback: plain text */
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {aiSuggestion.suggestion}
+                  </p>
+                )}
+              </div>
+              <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-700">
+                  <strong>Tip:</strong> Review the suggestions above and fix the issue if possible. If resolved, you may not need to create this bug. Otherwise, proceed to create the bug report.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -164,13 +286,21 @@ export default function CreateBug() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-            <input
+            <select
               name="assignedTo"
               value={form.assignedTo}
               onChange={onChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Email or name"
-            />
+            >
+              <option value="">-- Select Employee --</option>
+              {employees
+                .filter((emp) => emp.availabilityStatus === 'AVAILABLE')
+                .map((emp) => (
+                  <option key={emp.id} value={emp.name}>
+                    {emp.name}
+                  </option>
+                ))}
+            </select>
           </div>
         </div>
             <div className="pt-4 border-t border-gray-200 flex justify-end space-x-3">

@@ -5,17 +5,18 @@ const AI_BASE_URL = 'http://localhost:5001';
  * Sends POST request to /ai/suggest endpoint
  * @param {string} title - Bug title
  * @param {string} description - Bug description
+ * @param {string} userType - User type: "developer" or "business" (default: "developer")
  * @returns {Promise<{suggestion: string, predictedPriority: string}>} AI suggestion with predicted priority
  * @throws {Error} If the request fails or service is unavailable
  */
-export const getAiSuggestion = async (title, description) => {
+export const getAiSuggestion = async (title, description, userType = 'developer') => {
   try {
     const response = await fetch(`${AI_BASE_URL}/ai/suggest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ title, description }),
+      body: JSON.stringify({ title, description, userType }),
     });
 
     if (!response.ok) {
@@ -48,19 +49,6 @@ export const getAiSuggestion = async (title, description) => {
       throw new Error('Cannot connect to AI service. Make sure it\'s running on http://localhost:5001');
     }
     throw error;
-  }
-};
-
-/**
- * Health check for AI service
- * @returns {Promise} Health status
- */
-export const checkAiServiceHealth = async () => {
-  try {
-    const response = await fetch(`${AI_BASE_URL}/health`);
-    return response.ok;
-  } catch {
-    return false;
   }
 };
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getBugById, updateBug } from '../services/bugService';
+import { getBugById, updateBug, getAllEmployees } from '../services/bugService';
 import { toast } from 'react-hot-toast';
 
 export default function EditBug() {
@@ -8,6 +8,7 @@ export default function EditBug() {
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +19,17 @@ export default function EditBug() {
       .finally(() => mounted && setLoading(false));
     return () => (mounted = false);
   }, [id]);
+
+  useEffect(() => {
+    // Load employees on component mount
+    getAllEmployees()
+      .then((res) => {
+        setEmployees(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load employees:', err);
+      });
+  }, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -125,13 +137,24 @@ export default function EditBug() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-            <input
+            <select
               name="assignedTo"
               value={form.assignedTo || ''}
               onChange={onChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Email or name"
-            />
+            >
+              <option value="">-- Select Employee --</option>
+              {employees
+                .filter((emp) => {
+                  // Show available employees OR the currently assigned employee (even if busy)
+                  return emp.availabilityStatus === 'AVAILABLE' || emp.name === form.assignedTo;
+                })
+                .map((emp) => (
+                  <option key={emp.id} value={emp.name}>
+                    {emp.name} {emp.availabilityStatus === 'BUSY' && emp.name === form.assignedTo ? '(Currently Assigned)' : ''}
+                  </option>
+                ))}
+            </select>
           </div>
         </div>
             <div className="pt-4 border-t border-gray-200 flex justify-end space-x-3">

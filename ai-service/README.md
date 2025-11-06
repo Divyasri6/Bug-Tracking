@@ -30,23 +30,28 @@ The service will run on `http://localhost:5001`
 ## API Endpoints
 
 ### POST `/ai/suggest`
-Get AI suggestions for a bug.
+Get AI suggestions for a bug with customizable analysis type.
 
 **Request Body:**
 ```json
 {
   "title": "Login button not working",
-  "description": "The login button does not respond when clicked."
+  "description": "The login button does not respond when clicked.",
+  "userType": "developer"  // Optional: "developer" (default) or "business"
 }
 ```
 
 **Response:**
 ```json
 {
-  "suggestion": "Check the onClick handler...",
+  "suggestion": "Possible Causes: 1) onClick handler not bound... Resolutions: Check the onClick handler...",
   "predictedPriority": "HIGH"
 }
 ```
+
+**User Types:**
+- `"developer"` (default): Provides technical root causes, code hints, and fix suggestions
+- `"business"`: Provides non-technical summary, business impact assessment, and suggested priority with some technical context
 
 ### GET `/health`
 Health check endpoint.
