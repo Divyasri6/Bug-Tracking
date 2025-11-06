@@ -23,16 +23,16 @@ public class DataInitializer implements CommandLineRunner {
         if (employeeRepository.count() == 0) {
             logger.info("Initializing employee data...");
             
-            employeeRepository.save(new Employee("Alice Johnson", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("Bob Smith", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("Charlie Brown", AvailabilityStatus.BUSY));
-            employeeRepository.save(new Employee("Diana Prince", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("Ethan Hunt", AvailabilityStatus.BUSY));
-            employeeRepository.save(new Employee("Fiona Chen", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("George Wilson", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("Hannah Martinez", AvailabilityStatus.BUSY));
-            employeeRepository.save(new Employee("Ian Thompson", AvailabilityStatus.AVAILABLE));
-            employeeRepository.save(new Employee("Julia Roberts", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("John Doe", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("Emily Johnson", AvailabilityStatus.BUSY));
+            employeeRepository.save(new Employee("Michael Brown", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("Sarah Miller", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("David Wilson", AvailabilityStatus.BUSY));
+            employeeRepository.save(new Employee("Jessica Garcia", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("Daniel Martinez", AvailabilityStatus.BUSY));
+            employeeRepository.save(new Employee("Olivia Anderson", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("Ethan Thomas", AvailabilityStatus.AVAILABLE));
+            employeeRepository.save(new Employee("Sophia Robinson", AvailabilityStatus.BUSY));
             
             logger.info("Initialized {} employees", employeeRepository.count());
         } else {

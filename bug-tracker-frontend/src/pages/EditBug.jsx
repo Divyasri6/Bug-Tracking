@@ -24,10 +24,14 @@ export default function EditBug() {
     // Load employees on component mount
     getAllEmployees()
       .then((res) => {
-        setEmployees(Array.isArray(res.data) ? res.data : []);
+        console.log('Employees loaded:', res.data);
+        const employeesList = Array.isArray(res.data) ? res.data : [];
+        setEmployees(employeesList);
       })
       .catch((err) => {
         console.error('Failed to load employees:', err);
+        console.error('Error details:', err.response?.data || err.message);
+        setEmployees([]);
       });
   }, []);
 

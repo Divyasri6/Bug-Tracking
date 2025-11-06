@@ -21,16 +21,30 @@ export default function CreateBug() {
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [userType, setUserType] = useState('business');
   const [employees, setEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Load employees on component mount
+    setEmployeesLoading(true);
     getAllEmployees()
       .then((res) => {
-        setEmployees(Array.isArray(res.data) ? res.data : []);
+        console.log('Employees loaded:', res.data);
+        const employeesList = Array.isArray(res.data) ? res.data : [];
+        setEmployees(employeesList);
+        if (employeesList.length === 0) {
+          console.warn('No employees found in database');
+        }
       })
       .catch((err) => {
         console.error('Failed to load employees:', err);
+        console.error('Error details:', err.response?.data || err.message);
+        console.error('Full error:', err);
+        toast.error('Failed to load employees. Make sure the backend is running.');
+        setEmployees([]);
+      })
+      .finally(() => {
+        setEmployeesLoading(false);
       });
   }, []);
 
@@ -290,9 +304,12 @@ export default function CreateBug() {
               name="assignedTo"
               value={form.assignedTo}
               onChange={onChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              disabled={employeesLoading}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option value="">-- Select Employee --</option>
+              <option value="">
+                {employeesLoading ? 'Loading employees...' : '-- Select Employee --'}
+              </option>
               {employees
                 .filter((emp) => emp.availabilityStatus === 'AVAILABLE')
                 .map((emp) => (
@@ -301,6 +318,9 @@ export default function CreateBug() {
                   </option>
                 ))}
             </select>
+            {!employeesLoading && employees.filter((emp) => emp.availabilityStatus === 'AVAILABLE').length === 0 && (
+              <p className="mt-1 text-xs text-gray-500">No available employees found</p>
+            )}
           </div>
         </div>
             <div className="pt-4 border-t border-gray-200 flex justify-end space-x-3">
