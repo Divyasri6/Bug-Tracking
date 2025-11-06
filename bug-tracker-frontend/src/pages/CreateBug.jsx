@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBug } from '../services/bugService';
+import { getAiSuggestion } from '../services/aiService';
 import { toast } from 'react-hot-toast';
 
 const initial = {
@@ -14,6 +15,8 @@ const initial = {
 export default function CreateBug() {
   const [form, setForm] = useState(initial);
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const navigate = useNavigate();
 
   const onChange = (e) => {
@@ -25,6 +28,32 @@ export default function CreateBug() {
     if (!form.title.trim()) return 'Title is required';
     if (!form.description.trim()) return 'Description is required';
     return '';
+  };
+
+  const handleAiTriage = async () => {
+    if (!form.title.trim() || !form.description.trim()) {
+      toast.error('Please fill in Title and Description first');
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const suggestion = await getAiSuggestion(form.title, form.description);
+      // Update form with AI-suggested priority
+      setForm((prev) => ({
+        ...prev,
+        priority: suggestion.predictedPriority,
+      }));
+      toast.success('AI analysis complete! Priority updated.');
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to get AI suggestion';
+      setAiError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const onSubmit = async (e) => {
@@ -76,6 +105,34 @@ export default function CreateBug() {
             placeholder="Enter bug description"
           />
         </div>
+
+        {/* AI Triage Section */}
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+          <div className="flex items-center">
+            <div className="text-purple-600 text-xl mr-2">🤖</div>
+            <h4 className="text-md font-semibold text-purple-800">AI Assistant</h4>
+          </div>
+          <p className="text-sm text-purple-700">
+            Fill in the title and description, then let AI suggest the priority.
+          </p>
+          <button
+            type="button"
+            onClick={handleAiTriage}
+            disabled={aiLoading || !form.title.trim() || !form.description.trim()}
+            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300 disabled:cursor-not-allowed"
+          >
+            {aiLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Analyzing...
+              </>
+            ) : (
+              'Analyze with AI'
+            )}
+          </button>
+          {aiError && <p className="text-sm text-red-600 mt-2">{aiError}</p>}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
