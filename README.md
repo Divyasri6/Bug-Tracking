@@ -29,6 +29,7 @@ Runs on: `http://localhost:5001`
 
 ## 📚 Documentation
 
+- **[Backend Documentation](./BACKEND_DOCUMENTATION.md)** - Setup, configuration, and API reference for Spring Boot service
 - **[Frontend Documentation](./FRONTEND_DOCUMENTATION.md)** - Complete guide for React frontend
 - **[AI Service Documentation](./AI_SERVICE_DOCUMENTATION.md)** - Complete guide for Python AI service
 
