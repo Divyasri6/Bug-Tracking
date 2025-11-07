@@ -40,3 +40,15 @@ out/
 .DS_Store
 node_modules
 /backend/.env
+
+terraform.tfvars
+Terraform/terraform.tfvars
+Terraform/.terraform.lock.hcl
+Terraform/.terraform/
+Terraform/terraform.tfstate
+Terraform/terraform.tfstate.backup
+Terraform/terraform.tfvars.backup
+Terraform/terraform.tfvars.backup.backup
+Terraform/terraform.tfvars.backup.backup.backup
+Terraform/terraform.tfvars.backup.backup.backup.backup
+Terraform/terraform.tfvars.backup.backup.backup.backup.backup

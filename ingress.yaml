@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bugtracking-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8080
+          - path: /ai
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 5001
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bug-tracker-ingress
+spec:
+  # This sets the default service for all traffic
+  defaultBackend:
+    service:
+      name: frontend-service # Routes all traffic...
+      port:
+        number: 80         # ...to your frontend service's port 80
