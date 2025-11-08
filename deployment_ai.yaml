@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: us-central1-docker.pkg.dev/bug-tracking-477517/bug-tracker-repo/bug-tracking-ai:v1
+          image: us-central1-docker.pkg.dev/bug-tracking-477517/bug-tracker-repo/bug-tracking-ai:v2
           ports:
             - containerPort: 5001
           env:
@@ -28,17 +28,4 @@ spec:
                 secretKeyRef:
                   name: ai-api-key-model
                   key: OPENAI_MODEL
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ai-service
-spec:
-  type: ClusterIP
-  selector:
-    app: ai-service
-  ports:
-    - name: http
-      port: 5001
-      targetPort: 5001
 

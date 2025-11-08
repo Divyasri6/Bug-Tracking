@@ -270,7 +270,7 @@ async def suggest_ai(bug: BugQuery):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "AI Suggestion Service"}
+    return {"status": "OK"}
 
 # ----------------------------
 # Run app

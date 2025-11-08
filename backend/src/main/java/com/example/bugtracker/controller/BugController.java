@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/bugs")
+@RequestMapping("/api/bugs")
 @Tag(name = "Bug Controller", description = "REST API for managing bugs")
 @CrossOrigin(origins = "http://localhost:5173")
 public class BugController {
