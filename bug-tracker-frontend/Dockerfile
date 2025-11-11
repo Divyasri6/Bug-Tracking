@@ -2,7 +2,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 ARG VITE_API_BASE_URL=/api
+ARG VITE_AI_BASE_URL=/ai
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_AI_BASE_URL=${VITE_AI_BASE_URL}
 COPY bug-tracker-frontend/package*.json ./
 RUN npm ci
 COPY bug-tracker-frontend/ .
