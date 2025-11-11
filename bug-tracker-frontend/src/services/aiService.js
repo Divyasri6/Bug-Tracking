@@ -27,13 +27,17 @@ const extractErrorMessage = async (response) => {
  * @param {string} description
  * @param {string} userType
  */
-export const getAiSuggestion = async (title, description, userType = 'developer') => {
+export const getAiSuggestion = async (title, description, userType = 'developer', resolution) => {
   try {
     const base = normalizeBaseUrl(AI_BASE_URL);
+    const payload = { title, description, userType };
+    if (resolution && resolution.trim()) {
+      payload.resolution = resolution;
+    }
     const response = await fetch(`${base}/suggest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description, userType }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

@@ -35,7 +35,7 @@ export default function ViewBug() {
     setAiSuggestion(null);
 
     try {
-      const suggestion = await getAiSuggestion(bug.title, bug.description, 'business');
+      const suggestion = await getAiSuggestion(bug.title, bug.description, 'business', bug.resolution);
       setAiSuggestion(suggestion);
       toast.success('AI suggestion generated!');
     } catch (error) {
@@ -111,6 +111,14 @@ export default function ViewBug() {
                 <span className="text-gray-500 text-xs font-medium uppercase tracking-wide">Description</span>
                 <div className="mt-2 text-gray-600 whitespace-pre-wrap leading-relaxed">{bug.description}</div>
               </div>
+              {bug.resolution && (
+                <div>
+                  <span className="text-gray-500 text-xs font-medium uppercase tracking-wide">Resolution Notes</span>
+                  <div className="mt-2 text-gray-600 whitespace-pre-wrap leading-relaxed bg-green-50 border border-green-200 rounded-md p-3">
+                    {bug.resolution}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gray-200">
                 <div>
                   <span className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-2 block">Status</span>

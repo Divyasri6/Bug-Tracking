@@ -37,6 +37,9 @@ public class Bug {
     @Column(name = "assigned_to", length = 100)
     private String assignedTo;
 
+    @Column(name = "resolution_notes", length = 4000)
+    private String resolution;
+
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
 
@@ -78,6 +81,9 @@ public class Bug {
 
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+
+    public String getResolution() { return resolution; }
+    public void setResolution(String resolution) { this.resolution = resolution; }
 
     public LocalDateTime getCreatedDate() { return createdDate; }
     public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }

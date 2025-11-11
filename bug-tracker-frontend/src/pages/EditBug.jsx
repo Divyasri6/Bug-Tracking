@@ -58,6 +58,7 @@ export default function EditBug() {
         status: form.status,
         priority: form.priority,
         assignedTo: form.assignedTo,
+        resolution: form.resolution,
       });
       toast.success('Bug updated');
       navigate(`/bugs/${id}`);
@@ -108,6 +109,19 @@ export default function EditBug() {
             required
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Resolution Notes (optional)
+          </label>
+          <textarea
+            name="resolution"
+            value={form.resolution || ''}
+            onChange={onChange}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Document how the issue was resolved once known."
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

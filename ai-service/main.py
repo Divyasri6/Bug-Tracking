@@ -1,17 +1,16 @@
 import os
-from typing import Literal
+import hashlib
+from typing import Literal, List
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from dotenv import load_dotenv
+from rag_utils import add_bug_to_vector_store, retrieve_similar_bugs
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Note: LangChain imports are done conditionally inside the function
-# to support both modern and legacy versions
 
 # ----------------------------
 # Pydantic models
@@ -21,6 +20,11 @@ class BugQuery(BaseModel):
     title: str = Field(..., example="Login button not working")
     description: str = Field(..., example="The login button does not respond when clicked on the homepage.")
     userType: Literal["developer", "business"] = Field(default="developer", example="developer")
+    resolution: str | None = Field(
+        default=None,
+        example="Rolled back auth-service to v1.2.3 and purged CDN cache. Root cause was missing CSRF token.",
+        description="Optional resolution or fix summary once the bug is resolved."
+    )
 
 class AiSuggestion(BaseModel):
     suggestion: str = Field(
@@ -45,7 +49,7 @@ class AiSuggestion(BaseModel):
 # ----------------------------
 # FastAPI app + CORS
 # ----------------------------
-app = FastAPI(title="AI Suggestion Service for Bug Tracker")
+app = FastAPI(title="AI Suggestion Service for Bug Tracker with RAG")
 
 # Allow all CORS origins (React dev server can call this)
 app.add_middleware(
@@ -61,11 +65,8 @@ app.add_middleware(
 # ----------------------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    # We won't fail on import, but will raise when endpoint is used
     OPENAI_API_KEY = None
-
-# Choose a model; you may override via env var OPENAI_MODEL
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # change to preferred model if needed
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  
 
 # ----------------------------
 # Dynamic prompt generation based on user type
@@ -98,7 +99,26 @@ def get_system_prompt(user_type: str) -> str:
             "The response MUST be strictly valid JSON matching the format instructions provided."
         )
 
-def get_human_prompt(title: str, description: str, user_type: str, format_instructions: str) -> str:
+def build_context_section(docs) -> str:
+    if not docs:
+        return "No relevant historical bug reports were found in the knowledge base."
+    lines: List[str] = []
+    for idx, doc in enumerate(docs, start=1):
+        bug_id = doc.metadata.get("bug_id", f"similar_bug_{idx}")
+        snippet = doc.page_content.replace("\n", " ")
+        snippet = snippet[:350] + ("..." if len(snippet) > 350 else "")
+        lines.append(f"{idx}. Bug ID: {bug_id} -> {snippet}")
+    return "\n".join(lines)
+
+
+def get_human_prompt(
+    title: str,
+    description: str,
+    user_type: str,
+    format_instructions: str,
+    context_section: str,
+    resolution: str | None = None,
+) -> str:
     """
     Generate human prompt based on user type.
     """
@@ -107,6 +127,15 @@ def get_human_prompt(title: str, description: str, user_type: str, format_instru
         "BUG REPORT:\n"
         f"Title: {title}\n\n"
         f"Description: {description}\n\n"
+    )
+
+    if resolution:
+        base_prompt += f"Existing Resolution Notes:\n{resolution}\n\n"
+
+    base_prompt += (
+        "CONTEXT FROM KNOWN BUG REPORTS:\n"
+        f"{context_section}\n\n"
+        "Use the context above when it is relevant. If it is not helpful, clearly state that new investigation is required."
     )
     
     if user_type == "business":
@@ -132,7 +161,13 @@ def get_human_prompt(title: str, description: str, user_type: str, format_instru
 # ----------------------------
 # Helper: call LLM and parse structured output
 # ----------------------------
-def call_llm_and_parse(title: str, description: str, user_type: str = "developer") -> AiSuggestion:
+def call_llm_and_parse(
+    title: str,
+    description: str,
+    user_type: str,
+    context_section: str,
+    resolution: str | None = None,
+) -> AiSuggestion:
     """
     Call LLM with bug title and description, return structured AiSuggestion.
     
@@ -166,7 +201,9 @@ def call_llm_and_parse(title: str, description: str, user_type: str = "developer
         
         # Get dynamic prompts based on user type
         system_prompt = get_system_prompt(user_type)
-        human_message_content = get_human_prompt(title, description, user_type, format_instructions)
+        human_message_content = get_human_prompt(
+            title, description, user_type, format_instructions, context_section, resolution
+        )
 
         # Call the model
         messages = [
@@ -215,7 +252,9 @@ def call_llm_and_parse(title: str, description: str, user_type: str = "developer
 
         # Get dynamic prompts based on user type
         system_prompt = get_system_prompt(user_type)
-        human_message_content = get_human_prompt(title, description, user_type, format_instructions)
+        human_message_content = get_human_prompt(
+            title, description, user_type, format_instructions, context_section, resolution
+        )
 
         messages = [
             SystemMessage(content=system_prompt),
@@ -259,7 +298,19 @@ async def suggest_ai(bug: BugQuery):
     }
     """
     try:
-        ai_response = call_llm_and_parse(bug.title, bug.description, bug.userType)
+        query_text = f"{bug.title}\n\n{bug.description}"
+        if bug.resolution:
+            query_text += f"\n\nResolution:\n{bug.resolution}"
+        context_docs = retrieve_similar_bugs(query_text, k=3)
+        context_section = build_context_section(context_docs)
+
+        ai_response = call_llm_and_parse(
+            bug.title, bug.description, bug.userType, context_section, bug.resolution
+        )
+
+        bug_hash = hashlib.sha1(query_text.encode("utf-8")).hexdigest()
+        add_bug_to_vector_store(bug.title, bug.description, bug_hash, bug.resolution)
+
         return ai_response
     except RuntimeError as e:
         # Provide helpful error info in dev, but keep message safe for production

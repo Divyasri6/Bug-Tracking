@@ -86,6 +86,9 @@ public class BugServiceImpl implements BugService {
         if (updates.getAssignedTo() != null) {
             existing.setAssignedTo(updates.getAssignedTo());
         }
+        if (updates.getResolution() != null) {
+            existing.setResolution(updates.getResolution());
+        }
         // updatedDate will be set by @PreUpdate
         return bugRepository.save(existing);
     }
