@@ -174,10 +174,13 @@ def call_llm_and_parse(
         
         # Get prompts
         system_prompt = get_system_prompt()
+        print("system_prompt:--------------------------------")
+        print(system_prompt)
         human_message_content = get_human_prompt(
             title, description, format_instructions, context_section, resolution
         )
-
+        print("human_message_content:--------------------------------")
+        print(human_message_content)
         # Call the model
         messages = [
             SystemMessage(content=system_prompt),
@@ -216,16 +219,21 @@ async def suggest_ai(bug: BugQuery):
     try:
         query_text = f"{bug.title}\n\n{bug.description}"
         if bug.resolution:
-            query_text += f"\n\nResolution:\n{bug.resolution}"
+            store_text += f"\n\nResolution:\n{bug.resolution}"
         
+        print("🔍 Retrieving similar bugs for query:", query_text[:100])
         context_docs = retrieve_similar_bugs(query_text, k=3)
+        print("context_docs:--------------------------------")
+        print(context_docs)
         context_section = build_context_section(context_docs)
-        
+        print("context_section:--------------------------------")
+        print(context_section)
         ai_response = call_llm_and_parse(
             bug.title, bug.description, context_section, bug.resolution
         )
-
-        bug_hash = hashlib.sha1(query_text.encode("utf-8")).hexdigest()
+        
+        # Store bug after generating response (so it's available for future queries)
+        bug_hash = hashlib.sha1(store_text.encode("utf-8")).hexdigest()
         add_bug_to_vector_store(bug.title, bug.description, bug_hash, bug.resolution)
 
         return ai_response
