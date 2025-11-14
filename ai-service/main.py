@@ -118,7 +118,7 @@ def get_human_prompt(
         f"Title: {title}\n\n"
         f"Description: {description}\n\n"
     )
-
+    
     if resolution:
         base_prompt += f"Existing Resolution Notes:\n{resolution}\n\n"
 
@@ -126,13 +126,13 @@ def get_human_prompt(
         "CONTEXT FROM KNOWN BUG REPORTS:\n"
         f"{context_section}\n\n"
         "Use the context above when it is relevant. If it is not helpful, clearly state that new investigation is required.\n\n"
-        "Based on the bug title and description above, analyze the issue from a business perspective and provide:\n"
-        "- Business impact: How does this affect users, operations, or revenue?\n"
-        "- Possible causes: 2-3 likely root causes (explain in business terms with some technical context)\n"
-        "- Resolutions: Actionable steps including business-level actions and technical notes\n"
-        "- A predicted priority level (LOW, MEDIUM, or HIGH) based on business impact\n\n"
-        "Please return only the JSON object as instructed. Do not include any extra explanation."
-    )
+            "Based on the bug title and description above, analyze the issue from a business perspective and provide:\n"
+            "- Business impact: How does this affect users, operations, or revenue?\n"
+            "- Possible causes: 2-3 likely root causes (explain in business terms with some technical context)\n"
+            "- Resolutions: Actionable steps including business-level actions and technical notes\n"
+            "- A predicted priority level (LOW, MEDIUM, or HIGH) based on business impact\n\n"
+            "Please return only the JSON object as instructed. Do not include any extra explanation."
+        )
     
     return base_prompt
 
@@ -217,21 +217,24 @@ async def suggest_ai(bug: BugQuery):
     }
     """
     try:
-        query_text = f"{bug.title}\n\n{bug.description}"
+        # Use only title + description for retrieval (not resolution)
+        # This ensures we find similar bugs based on the problem, not the solution
+        query_text = f"{bug.title} {bug.description}"
+        
+        # Store the full text including resolution for future queries
+        store_text = f"{bug.title}\n\n{bug.description}"
         if bug.resolution:
             store_text += f"\n\nResolution:\n{bug.resolution}"
         
         print("🔍 Retrieving similar bugs for query:", query_text[:100])
         context_docs = retrieve_similar_bugs(query_text, k=3)
-        print("context_docs:--------------------------------")
-        print(context_docs)
+        print(f"📋 Found {len(context_docs)} similar bugs")
         context_section = build_context_section(context_docs)
-        print("context_section:--------------------------------")
-        print(context_section)
+        
         ai_response = call_llm_and_parse(
             bug.title, bug.description, context_section, bug.resolution
         )
-        
+
         # Store bug after generating response (so it's available for future queries)
         bug_hash = hashlib.sha1(store_text.encode("utf-8")).hexdigest()
         add_bug_to_vector_store(bug.title, bug.description, bug_hash, bug.resolution)

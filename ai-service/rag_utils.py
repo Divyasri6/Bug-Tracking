@@ -19,6 +19,7 @@ def _get_vector_store():
     global _vector_store, _embeddings
     
     if _vector_store is not None:
+        print("♻️ Using existing vector store instance.")
         return _vector_store
     
     _api_key = os.getenv("OPENAI_API_KEY")
@@ -37,15 +38,23 @@ def _get_vector_store():
             return None
         
         print("✅ Vector store initialized successfully.")
-        # Verify we can access the collection
+        
+        # Verify we can access the collection (don't fail if this errors)
         try:
             collection = _vector_store._collection
             if collection:
                 count = collection.count()
                 print(f"📊 Verified vector store has {count} documents.")
         except Exception as e:
-            print(f"⚠️ Warning: Could not verify collection: {e}")
+            print(f"⚠️ Warning: Could not verify collection (this is OK): {e}")
+            # Don't fail initialization if verification fails
         
+        # Final check before returning
+        if _vector_store is None:
+            print("❌ Vector store became None after verification.")
+            return None
+        
+        print(f"✅ Returning vector store: {type(_vector_store)}")
         return _vector_store
     except Exception as e:
         print(f"❌ Error initializing vector store: {e}")
@@ -58,7 +67,8 @@ def _get_vector_store():
 def add_bug_to_vector_store(title: str, description: str, bug_id: str, resolution: str | None = None):
     """Embed and store a new bug report."""
     vector_store = _get_vector_store()
-    if not vector_store:
+    # Use explicit None check instead of truthiness check (Chroma objects can evaluate to False)
+    if vector_store is None:
         print("⚠️ Vector store not initialized. Skipping adding bug.")
         return
     body = f"{title}\n\n{description}"
@@ -72,7 +82,8 @@ def add_bug_to_vector_store(title: str, description: str, bug_id: str, resolutio
 def retrieve_similar_bugs(query: str, k: int = 3):
     """Retrieve top-k similar bug reports."""
     vector_store = _get_vector_store()
-    if not vector_store:
+    # Use explicit None check instead of truthiness check (Chroma objects can evaluate to False)
+    if vector_store is None:
         print("⚠️ Vector store not initialized. Skipping retrieval.")
         return []
     
