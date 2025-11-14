@@ -35,7 +35,7 @@ export default function ViewBug() {
     setAiSuggestion(null);
 
     try {
-      const suggestion = await getAiSuggestion(bug.title, bug.description, 'business', bug.resolution);
+      const suggestion = await getAiSuggestion(bug.title, bug.description, bug.resolution);
       setAiSuggestion(suggestion);
       toast.success('AI suggestion generated!');
     } catch (error) {

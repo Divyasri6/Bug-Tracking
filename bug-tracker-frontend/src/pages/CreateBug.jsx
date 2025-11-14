@@ -69,8 +69,7 @@ export default function CreateBug() {
     setAiSuggestion(null);
 
     try {
-      // Always use business mode
-      const suggestion = await getAiSuggestion(form.title, form.description, 'business');
+      const suggestion = await getAiSuggestion(form.title, form.description);
       setAiSuggestion(suggestion);
       // Update form with AI-suggested priority
       setForm((prev) => ({

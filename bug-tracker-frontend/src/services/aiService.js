@@ -25,12 +25,12 @@ const extractErrorMessage = async (response) => {
  * Get AI suggestion for a bug.
  * @param {string} title
  * @param {string} description
- * @param {string} userType
+ * @param {string} [resolution] - Optional resolution notes for RAG
  */
-export const getAiSuggestion = async (title, description, userType = 'developer', resolution) => {
+export const getAiSuggestion = async (title, description, resolution) => {
   try {
     const base = normalizeBaseUrl(AI_BASE_URL);
-    const payload = { title, description, userType };
+    const payload = { title, description };
     if (resolution && resolution.trim()) {
       payload.resolution = resolution;
     }
@@ -43,11 +43,11 @@ export const getAiSuggestion = async (title, description, userType = 'developer'
     if (!response.ok) {
       const parsedMessage = await extractErrorMessage(response);
       const errorMessage = parsedMessage || 'Failed to get AI suggestion';
-
+      
       if (response.status === 503 || response.status === 0) {
         throw new Error('AI service is unavailable. Please verify the AI endpoint is reachable.');
       }
-
+      
       throw new Error(errorMessage);
     }
 
@@ -55,7 +55,7 @@ export const getAiSuggestion = async (title, description, userType = 'developer'
     if (!data?.suggestion || !data?.predictedPriority) {
       throw new Error('Invalid response from AI service');
     }
-
+    
     return data;
   } catch (error) {
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
