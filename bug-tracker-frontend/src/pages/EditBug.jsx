@@ -29,8 +29,7 @@ export default function EditBug() {
         setEmployees(employeesList);
       })
       .catch((err) => {
-        console.error('Failed to load employees:', err);
-        console.error('Error details:', err.response?.data || err.message);
+        console.error('Failed to load employees:', err.response?.data || err.message);
         setEmployees([]);
       });
   }, []);

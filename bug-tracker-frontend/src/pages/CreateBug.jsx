@@ -36,9 +36,7 @@ export default function CreateBug() {
         }
       })
       .catch((err) => {
-        console.error('Failed to load employees:', err);
-        console.error('Error details:', err.response?.data || err.message);
-        console.error('Full error:', err);
+        console.error('Failed to load employees:', err.response?.data || err.message);
         toast.error('Failed to load employees. Make sure the backend is running.');
         setEmployees([]);
       })

@@ -1,3 +1,62 @@
+# ============================================
+# Environment & Secrets
+# ============================================
+.env
+.env.*
+*.env
+*.env.local
+*.env.*.local
+.envrc
+secrets/
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*secret*
+*password*
+*credentials*
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# ============================================
+# Node.js / Frontend
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+*.local
+.npm
+.eslintcache
+.parcel-cache
+
+# ============================================
+# Java / Gradle / Spring Boot
+# ============================================
 HELP.md
 .gradle
 build/
@@ -5,50 +64,96 @@ backend/build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.ipr
+*.iws
 
-### NetBeans ###
+# ============================================
+# IDE
+# ============================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
-.vscode/
-.env
+# ============================================
+# OS
+# ============================================
 .DS_Store
-node_modules
-/backend/.env
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
 
+# ============================================
+# Terraform
+# ============================================
 terraform.tfvars
-Terraform/terraform.tfvars
-Terraform/.terraform.lock.hcl
-Terraform/.terraform/
-Terraform/terraform.tfstate
-Terraform/terraform.tfstate.backup
-Terraform/terraform.tfvars.backup
-Terraform/terraform.tfvars.backup.backup
-Terraform/terraform.tfvars.backup.backup.backup
-Terraform/terraform.tfvars.backup.backup.backup.backup
-Terraform/terraform.tfvars.backup.backup.backup.backup.backup
+*.tfvars
+*.tfvars.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate.backup
+.terraformrc
+terraform.rc
+
+# ============================================
+# Docker
+# ============================================
+.dockerignore
+docker-compose.override.yml
+
+# ============================================
+# Logs & Temporary Files
+# ============================================
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ============================================
+# Vector Store / Database
+# ============================================
+bug_rag_db/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Kubernetes
+# ============================================
+k8s/*.yaml.bak
+k8s/secrets/
+

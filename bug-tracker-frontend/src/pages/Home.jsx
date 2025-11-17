@@ -17,7 +17,7 @@ export default function Home() {
         setBugs(Array.isArray(res.data) ? res.data : []);
       })
       .catch((err) => {
-        console.error('Failed to load bugs:', err);
+        console.error('Failed to load bugs:', err.response?.data || err.message);
         if (!isMounted) return;
         setBugs([]);
       })

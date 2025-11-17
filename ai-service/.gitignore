@@ -8,18 +8,36 @@ env/
 venv/
 ENV/
 .venv
+*.egg-info/
+dist/
+build/
+*.egg
 
-# Environment variables
+# Environment variables & secrets
 .env
-.env.local
+.env.*
+*.env
+*.env.local
+.envrc
+
+# Vector store data
+bug_rag_db/
+*.db
+*.sqlite
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
